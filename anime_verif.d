@@ -32,7 +32,7 @@ import std.algorithm;
 string help_text = q"EOF
 Check size anomalies and episode numbers sequence.
 
-Usage: anime_verif.py [-a N] [-s|-n] DIRECTORY
+Usage: anime_verif [-a N] [-s|-n] DIRECTORY
 
 Options:
     -h, --help          Print this help and exit
