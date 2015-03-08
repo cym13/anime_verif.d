@@ -139,7 +139,7 @@ int main(string[] args)
         if (!dir.exists || !dir.isDir) {
             writeln("Invalid directory: " ~ dir);
             return_status = 1;
-            break;
+            continue;
         }
         chdir(dir);
 
