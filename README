@@ -5,6 +5,8 @@ This simple script allows one to check the consistency of a set of files. It
 was designed to check sets of videos but can be used for other kind of files
 as well (at least for the moment).
 
+Written in D for efficiency (and because D is fun :p )
+
 Features
 ========
 
