@@ -164,6 +164,7 @@ int main(string[] args)
             writeln("Some episodes may be missing: " ~ dir);
             return_status = 1;
         }
+        chdir("..");
     }
     return return_status;
 }
