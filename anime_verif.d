@@ -57,8 +57,11 @@ bool size_check(SIZE_T, FILE_T)(SIZE_T size_list,
                                 FILE_T file_list,
                                 uint accuracy)
 {
-    if (size_list.canFind(0)) {
-        writeln("Presence of files of size 0");
+    // Detect null files
+    auto zeroFiles = zip(size_list, file_list).filter!(t => t[0] == 0).array;
+
+    if (zeroFiles.length > 0) {
+        zeroFiles.each!(t => writeln("File of size 0: ", t[1]));
         return false;
     }
 
@@ -141,9 +144,7 @@ int main(string[] args)
             return_status = 1;
             continue;
         }
-        chdir(dir);
-
-        auto file_list = dirEntries(".", SpanMode.breadth)
+        auto file_list = dirEntries(dir, SpanMode.breadth)
                                 .filter!(x => isFile(x))
                                 .map!(to!string)
                                 .array;
@@ -164,7 +165,6 @@ int main(string[] args)
             writeln("Some episodes may be missing: " ~ dir);
             return_status = 1;
         }
-        chdir("..");
     }
     return return_status;
 }
