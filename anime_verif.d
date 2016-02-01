@@ -17,6 +17,7 @@
  *  END_OF_LICENSE
  */
 
+import std.uni;
 import std.conv;
 import std.file;
 import std.math;
@@ -25,14 +26,16 @@ import std.range;
 import std.regex;
 import std.stdio;
 import std.getopt;
-import std.c.stdlib;
+import std.typecons;
 import std.algorithm;
+import std.digest.crc;
+import core.stdc.stdlib;
 
 
 string help_text = q"EOF
 Check size anomalies and episode numbers sequence.
 
-Usage: anime_verif [-a N] [-s|-n] DIRECTORY
+Usage: anime_verif [-a N] [-s|-n|-c] DIRECTORY
 
 Options:
     -h, --help          Print this help and exit
@@ -40,8 +43,9 @@ Options:
                         times the standart deviation. Default is 3.
     -s, --size          Check size only
     -n, --numbers       Check episode numbers only
+    -c, --checksum      Check checksum only
 
-If -s and -n are missing or if -s and -n are used together, size and numbers
+If -s, -n and -c are missing or if used together, size, numbers and checksums
 are both checked.
 EOF";
 
@@ -82,7 +86,7 @@ bool size_check(SIZE_T, FILE_T)(SIZE_T size_list,
     foreach (size, file ; zip(sizes, file_list)) {
         if (size < average_size &&
             (size - average_size) ^^ 2 > accuracy * variation) {
-            writeln("Size anomaly detected: " ~ file);
+            writeln("Size anomaly detected: ", file);
             return false;
         }
     }
@@ -90,6 +94,28 @@ bool size_check(SIZE_T, FILE_T)(SIZE_T size_list,
     return true;
 }
 
+auto get_filename_CRCs(string filename) {
+    auto crc32Regex = ctRegex!(`\[([a-f0-9]{8}|[A-F0-9]{8})\]`);
+    return filename.matchAll(crc32Regex).map!(x => x[1].toUpper);
+}
+
+bool filename_CRC_check(T)(T file_list) {
+    bool result = true;
+    foreach (file ; file_list) {
+        auto crcs = get_filename_CRCs(file);
+
+        if (crcs.empty)
+            continue;
+
+        auto digest = file.read.crc32Of.reverse.toHexString;
+
+        if (crcs.all!(x => x != digest)) {
+            writeln("Invalid crc32: ", file);
+            result = false;
+        }
+    }
+    return result;
+}
 
 bool ep_numbers_check(T)(T file_list)
 {
@@ -118,11 +144,13 @@ int main(string[] args)
     uint accuracy      = 5;
     bool check_size;
     bool check_numbers;
+    bool check_crc32;
 
     getopt(args,
         "accuracy|a", &accuracy,
         "size|s",     &check_size,
         "numbers|n",  &check_numbers,
+        "checksum|c", &check_crc32,
         "help|h",     { writeln(help_text); exit(0); }
         );
 
@@ -133,9 +161,10 @@ int main(string[] args)
 
     auto target_dir = args[1..$];
 
-    if (!check_size && !check_numbers) {
+    if (!check_size && !check_numbers && !check_crc32) {
         check_size    = true;
         check_numbers = true;
+        check_crc32   = true;
     }
 
     foreach(dir ; target_dir) {
@@ -165,6 +194,9 @@ int main(string[] args)
             writeln("Some episodes may be missing: " ~ dir);
             return_status = 1;
         }
+
+        else if (check_crc32 && !filename_CRC_check(file_list))
+            return_status = 1;
     }
     return return_status;
 }
