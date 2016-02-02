@@ -9,9 +9,9 @@ import std.stdio;
 import std.algorithm;
 
 string help_text = q"EOF
-Check size anomalies and episode numbers sequence.
+Check series anomalies.
 
-Usage: anime_verif [-a N] [-s|-n|-c] [-e EXTS] DIRECTORY...
+Usage: anime_check [-a N] [-s|-n|-c] [-e EXTS] DIRECTORY...
 
 Options:
     -h, --help          Print this help and exit
