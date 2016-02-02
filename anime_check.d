@@ -54,7 +54,7 @@ bool checkSize(string[] files, uint accuracy, bool checkSizeF) {
     import std.math: floor;
 
     if (!checkSizeF)
-        return false;
+        return true;
 
     bool retval = true;
     auto sizes  = files.map!(getSize)
@@ -93,7 +93,7 @@ bool checkSize(string[] files, uint accuracy, bool checkSizeF) {
 
 bool checkNumbers(string[] files, string dir, bool checkNumbersF) {
     if (!checkNumbersF)
-        return false;
+        return true;
 
     bool retval = true;
 
@@ -191,7 +191,7 @@ int main(string[] args) {
                                      .map!(e => "." ~ e)
                                      .array;
 
-    bool retval;
+    bool retval = true;
     foreach(dir ; args[1..$]) {
         if (!dir.isValidDirectory) {
             retval = false;
