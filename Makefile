@@ -1,5 +1,5 @@
 CC=ldmd
-CFLAGS=-O -inline
+CFLAGS=-O -inline -m64
 
 anime_check: anime_check.d
 	$(CC) $(CFLAGS) $<
