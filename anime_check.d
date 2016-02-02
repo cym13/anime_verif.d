@@ -1,7 +1,9 @@
 #!/usr/bin/env rdmd
 
+import std.uni;
 import std.conv;
 import std.file;
+import std.path;
 import std.array;
 import std.range;
 import std.regex;
@@ -30,8 +32,6 @@ auto extractNumbers(string filename)
 }
 
 auto getFilenameCrcs(string filename) {
-    import std.uni: toUpper;
-
     auto crc32Regex = ctRegex!(`\[([a-f0-9]{8}|[A-F0-9]{8})\]`);
     return filename.matchAll(crc32Regex).map!(x => x[1].toUpper);
 }
@@ -115,17 +115,41 @@ bool checkNumbers(string[] files, string dir, bool checkNumbersF) {
     return retval;
 }
 
+void readSfv(string path, ref string[string] sfv) {
+    import std.typecons;
+
+    auto crc32Regex = ctRegex!(`^(.*) ([a-f0-9]{8}|[A-F0-9]{8})$`);
+
+    foreach (line ; File(path).byLine) {
+        if (line.startsWith(";") || line.length == 0)
+            continue;
+
+        auto res = line.matchAll(crc32Regex).captures;
+        sfv[ res[1].to!string ] = res[2].toUpper.to!string;
+    }
+}
+
 bool checkCrc32(string[] files, bool checkCrc32F) {
     import std.digest.crc;
 
     if (!checkCrc32F)
-        return false;
+        return true;
+
+    string[string] sfvData;
+
+    files.filter!(f => f.extension == ".sfv")
+         .each!(f => f.readSfv(sfvData));
 
     bool retval = true;
-    foreach (file ; files) {
-        auto crcs = getFilenameCrcs(file);
+    foreach (file ; files.filter!(f => f.extension != ".sfv")) {
+        string[] crcs;
 
-        if (crcs.empty)
+        if (sfvData.length != 0)
+            crcs = [ sfvData.get(file.baseName, "") ];
+        else
+            crcs = getFilenameCrcs(file).array;
+
+        if (crcs.length == 0)
             continue;
 
         auto digest = file.read.crc32Of.reverse.toHexString;
@@ -139,7 +163,6 @@ bool checkCrc32(string[] files, bool checkCrc32F) {
 }
 
 int main(string[] args) {
-    import std.path: extension;
     import std.getopt: getopt;
     import std.c.stdlib: exit;
 
