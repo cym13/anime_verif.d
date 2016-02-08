@@ -199,7 +199,7 @@ int main(string[] args) {
         }
 
         auto files = dirEntries(dir, SpanMode.breadth)
-                            .filter!(f => isFile(f))
+                            .filter!(f => f.isFile)
                             .map!(to!string)
                             .filter!(f => !exts.canFind(f.extension))
                             .array;
