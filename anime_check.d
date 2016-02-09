@@ -74,7 +74,7 @@ bool checkSize(string[] files, uint accuracy, bool checkSizeF) {
     immutable averageSize = sum(sizes) / sizes.length;
     immutable variation   = sizes.map!(x => (x - averageSize) ^^ 2)
                                  .array
-                                 .sort()
+                                 .sort
                                  .uniq
                                  .sum
                             / sizes.length;
