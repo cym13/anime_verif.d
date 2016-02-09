@@ -63,7 +63,7 @@ bool checkSize(string[] files, uint accuracy, bool checkSizeF) {
                        .array;
 
     // Detect null files
-    auto zeroFiles = zip(sizes, files).filter!(t => t[0] == 0).array;
+    const zeroFiles = zip(sizes, files).filter!(t => t[0] == 0).array;
 
     if (zeroFiles.length > 0) {
         zeroFiles.each!(t => stderr.writeln("File of size 0: ", t[1]));
@@ -71,13 +71,13 @@ bool checkSize(string[] files, uint accuracy, bool checkSizeF) {
     }
 
     // Set the average size and the variance for statistical size study
-    auto averageSize = sum(sizes) / sizes.length;
-    auto variation   = sizes.map!(x => (x - averageSize) ^^ 2)
-                            .array
-                            .sort
-                            .uniq
-                            .sum
-                       / sizes.length;
+    immutable averageSize = sum(sizes) / sizes.length;
+    immutable variation   = sizes.map!(x => (x - averageSize) ^^ 2)
+                                 .array
+                                 .sort()
+                                 .uniq
+                                 .sum
+                            / sizes.length;
 
     // Detect size anomalies
     foreach (size, file ; zip(sizes, files)) {
@@ -91,7 +91,7 @@ bool checkSize(string[] files, uint accuracy, bool checkSizeF) {
     return retval;
 }
 
-bool checkNumbers(string[] files, string dir, bool checkNumbersF) {
+bool checkNumbers(string[] files, bool checkNumbersF) {
     if (!checkNumbersF)
         return true;
 
@@ -116,8 +116,6 @@ bool checkNumbers(string[] files, string dir, bool checkNumbersF) {
 }
 
 void readSfv(string path, ref string[string] sfv) {
-    import std.typecons;
-
     auto crc32Regex = ctRegex!(`^(.*) ([a-f0-9]{8}|[A-F0-9]{8})$`);
 
     foreach (line ; File(path).byLine) {
@@ -130,7 +128,7 @@ void readSfv(string path, ref string[string] sfv) {
 }
 
 bool checkCrc32(string[] files, bool checkCrc32F) {
-    import std.digest.crc;
+    import std.digest.crc: crc32Of, toHexString;
 
     if (!checkCrc32F)
         return true;
@@ -152,7 +150,10 @@ bool checkCrc32(string[] files, bool checkCrc32F) {
         if (crcs.length == 0)
             continue;
 
-        auto digest = file.read.crc32Of.reverse.toHexString;
+        immutable digest = File(file, "rb").byChunk(8192)
+                                           .crc32Of
+                                           .reverse
+                                           .toHexString;
 
         if (crcs.all!(x => x != digest)) {
             stderr.writeln("Invalid crc32: ", file);
@@ -167,7 +168,6 @@ int main(string[] args) {
     import std.c.stdlib: exit;
 
     string excludeExtensions;
-    uint   return_status = 0;
     uint   accuracy      = 5;
     bool   checkSizeF;
     bool   checkNumbersF;
@@ -205,7 +205,7 @@ int main(string[] args) {
                             .array;
 
         retval &= files.checkSize(accuracy, checkSizeF)
-               &  files.checkNumbers(dir, checkNumbersF)
+               &  files.checkNumbers(checkNumbersF)
                &  files.checkCrc32(checkCrc32F);
     }
     return !retval;
