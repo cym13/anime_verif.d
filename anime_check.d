@@ -100,10 +100,14 @@ bool checkNumbers(string[] files, bool checkNumbersF) {
     files.sort();
     foreach(index ; 1..files.length) {
         auto prevNumbers = extractNumbers(files[index - 1]);
-        bool follow      = false;
+        bool follow       = false;
 
-        if (!files[index].extractNumbers
-                         .any!(n => prevNumbers.canFind(n-1))) {
+        foreach(num ; extractNumbers(files[index])) {
+            if (prevNumbers.canFind(num - 1))
+                follow = true;
+        }
+
+        if (!follow) {
             stderr.writeln("An episode may be missing after: ", files[index-1]);
             retval = false;
         }
@@ -111,17 +115,16 @@ bool checkNumbers(string[] files, bool checkNumbersF) {
     return retval;
 }
 
-string[string] readSfv(string path) {
+void readSfv(string path, ref string[string] sfv) {
     auto crc32Regex = ctRegex!(`^(.*) ([a-f0-9]{8}|[A-F0-9]{8})$`);
 
-    string[string] sfv;
+    foreach (line ; File(path).byLine) {
+        if (line.startsWith(";") || line.length == 0)
+            continue;
 
-    File(path).byLine
-              .filter!(l => l.length == 0 || l.startsWith(";"))
-              .map!(l => l.matchAll(crc32Regex).captures)
-              .each!(t => sfv[t[1].to!string] = t[2].toUpper.to!string);
-
-    return sfv;
+        auto res = line.matchAll(crc32Regex).captures;
+        sfv[ res[1].to!string ] = res[2].toUpper.to!string;
+    }
 }
 
 bool checkCrc32(string[] files, bool checkCrc32F) {
