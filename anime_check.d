@@ -151,8 +151,9 @@ bool checkCrc32(string[] files, bool checkCrc32F) {
             continue;
 
         immutable digest = File(file, "rb").byChunk(8192)
-                                           .crc32Of
-                                           .reverse
+                                           .crc32Of[]
+                                           .retro
+                                           .array
                                            .toHexString;
 
         if (crcs.all!(x => x != digest)) {
